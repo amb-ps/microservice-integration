@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+    environment {
+        AWS_ACCOUNT_ID="314852763981"
+        AWS_DEFAULT_REGION="us-east-1"
+        IMAGE_REPO_NAME="microservice-integration"
+        IMAGE_TAG="latest"
+        REPOSITORY_URI = "314852763981.dkr.ecr.us-east-1.amazonaws.com/microservice-integration"
+        registryCredential = 'ecr:us-east-1:awscreds'
+        myprojectRegistry = "314852763981.dkr.ecr.us-east-1.amazonaws.com/microservice-integration"
+        cluster = "myprojectapp-cluster"
+        service = "myprojectapp-service-integration"
+    }
+
+    stages {
+
+        stage('Cloning Git') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '', url: 'https://github.com/amb-ps/microservice-integration.git']]])
+            }
+        }
+
+         stage('Build Maven Project') {
+            steps {
+                script {
+                    // Ensure the correct Maven installation is used
+                    sh 'mvn clean install'
+                }
+            }
+        }
+
+         stage('Logging into AWS ECR') {
+            steps {
+                script {
+                sh """aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"""
+                }
+
+            }
+        }
+
+
+
+    // Building Docker images
+    stage('Building image') {
+      steps{
+        script {
+          //dockerImage = docker.build("${IMAGE_REPO_NAME}:${IMAGE_TAG}", "--no-cache")
+            dockerImage = docker.build("${IMAGE_REPO_NAME}:${IMAGE_TAG}", "--no-cache .")
+        }
+      }
+    }
+
+    // Uploading Docker images into AWS ECR
+    stage('Pushing to ECR') {
+     steps{
+         script {
+                sh """docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:$IMAGE_TAG"""
+                sh """docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}"""
+         }
+        }
+      }
+
+      stage('Deploy to ECS') {
+          steps {
+            withAWS(credentials: 'awscreds', region: 'us-east-1') {
+            sh 'aws ecs update-service --cluster ${cluster} --service ${service} --force-new-deployment'
+            }
+         }
+      }
+
+    }
+}

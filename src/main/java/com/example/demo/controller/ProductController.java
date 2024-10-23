@@ -1,5 +1,10 @@
 package com.example.demo.controller;
 import com.example.demo.dto.ProductResponse;
+import com.example.demo.service.ProductService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,23 +17,17 @@ import java.util.List;
 @RestController
 public class ProductController {
 
-    private final WebClient webClient;
+    private final ProductService productService;
 
-    @Autowired
-    public ProductController(WebClient webClient) {
-        this.webClient = webClient;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
     }
+
 
     @GetMapping("/products")
     public List<String> findAllProducts() {
-        String productApiUrl = "http://eca.aws.service.demo.eca.aws.service.demo:8080/products";
-
-        return webClient.get()
-                .uri(productApiUrl)
-                .retrieve()
-                .bodyToFlux(String.class)
-                .collectList()
-                .block();
+        return productService.getProuctListFromMicro();
     }
 
     @GetMapping("/integrated/products")

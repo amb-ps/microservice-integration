@@ -31,9 +31,9 @@ public class ProductService {
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .map(jsonNode -> {
-                    logger.info("jsonNode...."+jsonNode);
-                    String productsString = jsonNode.get(0).asText();
-                    logger.info("productsString...."+productsString);
+                    logger.debug("jsonNode...."+jsonNode);
+                    String productsString = jsonNode.asText();
+                    logger.debug("productsString...."+productsString);
                     try {
                         return new ObjectMapper().readValue(productsString, new TypeReference<List<String>>() {});
                     } catch (JsonProcessingException e) {

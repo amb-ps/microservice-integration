@@ -29,18 +29,8 @@ public class ProductService {
         return webClient.get()
                 .uri(productApiUrl)
                 .retrieve()
-                .bodyToMono(JsonNode.class)
-                .map(jsonNode -> {
-                    logger.debug("jsonNode...."+jsonNode);
-                    String productsString = jsonNode.asText();
-                    logger.debug("productsString...."+productsString);
-                    try {
-                        return new ObjectMapper().readValue(productsString, new TypeReference<List<String>>() {});
-                    } catch (JsonProcessingException e) {
-                        logger.error("Error fetching record list: {}", e.getMessage());
-                        throw new RuntimeException("Failed to retrieve the list");
-                    }
-                })
+                .bodyToFlux(String.class)
+                .collectList()
                 .block();
     }
 }

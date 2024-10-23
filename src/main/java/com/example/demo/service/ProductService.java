@@ -14,6 +14,7 @@ public class ProductService {
 
     private final WebClient webClient;
 
+    @Autowired
     public ProductService(WebClient webClient) {
         this.webClient = webClient;
     }
